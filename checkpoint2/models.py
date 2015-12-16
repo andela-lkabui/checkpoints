@@ -7,7 +7,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
 from flask import current_app
-# from flask.ext.login import UserMixin
 
 from passlib.apps import custom_app_context as pwd_context
 
@@ -65,6 +64,9 @@ class User(Base):
 		user = manager.query(User).get(data['id'])
 		return user
 
-if __name__ == '__main__':
+def init_db():
 	engine = create_engine(os.environ['DATABASE_URL'], echo=True)
 	Base.metadata.create_all(engine)
+
+if __name__ == '__main__':
+	init_db()

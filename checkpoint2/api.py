@@ -23,6 +23,7 @@ auth = HTTPBasicAuth()
 engine = create_engine(os.environ['DATABASE_URL'])
 session = sessionmaker()
 session.configure(bind=engine)
+print '==================================' + os.environ['DATABASE_URL'] + ' !!'
 manager = session()
 
 access_denied = {'message': 'Access denied!'}
@@ -50,27 +51,28 @@ def verify_password(username_or_token, password):
 	else:
 		return False
 
-@app.route('/user/registration', methods=['GET', 'POST'])
-def registration():
-	if request.method == 'GET':
-		return render_template('register.html', error=None)
-	elif request.method == 'POST':
-		try:
-			json_data = request.get_json()
-			username = str(json_data['username'])
-			password = str(json_data['password'])
-			if username is None or password is None:
-				return render_template('register.html', error='Username and/or password missing!')
-			exists = manager.query(models.User).filter_by(username = username).first()
-			if exists:
-				return render_template('register.html', error='User already exists!')
-			user = models.User(username=username)
-			user.hash_password(password)
-			manager.add(user)
-			manager.commit()
-			return render_template('register.html', error='User successfully registered!')
-		except Exception as e:
-			return render_template('register.html', error=e)
+class Registration(Resource):
+
+	def post(self):
+		parser = reqparse.RequestParser()
+		parser.add_argument('username')
+		parser.add_argument('password')
+
+		args = parser.parse_args()
+		username = args.get('username')
+		password = args.get('password')
+		if bool(username) == False or bool(password) == False:
+			return jsonify({'error':'Username and/or password missing!'})
+		exists = manager.query(models.User).filter_by(username = username).first()
+		if exists:
+			return jsonify({'error':'User already exists!'})
+		user = models.User(username=username)
+		user.hash_password(password)
+		manager.add(user)
+		manager.commit()
+		return jsonify({'message':'User successfully registered!'})
+	
+api.add_resource(Registration, '/user/registration')
 
 
 class BucketList(Resource):
